@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { BottomNavigation } from "../components/bottom-navigation";
 import CounselorCard from "../components/cards/counselor-card";
 import { Header } from "../components/header";
@@ -8,42 +8,47 @@ import { useRouter } from "next/navigation";
 import CounselorBookingModal from "../components/ui/modals/bookingModal";
 import { ArrowLeft } from "lucide-react";
 import { useReadAllCounselors } from "@/hooks/useCounselorHooks";
+import LoadingModal from "../components/ui/modals/LoadingModal";
+import { toast } from "react-toastify";
+import generateAvatarFromAddress from "@/genUserData/genUserAvatar";
+import useCounselorStore from "@/store/useCounselorStore";
+import { parseEther } from "viem";
 
 export default function FindCounselorsPage() {
-
-  const { counselors, isLoading, isError, refetch } =useReadAllCounselors();
-
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [selectedCounselor, setSelectedCounselor] = useState<{
-    name: string;
-    fee: string;
-  } | null>(null);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+  const { counselors, isLoading, isError } = useReadAllCounselors();
+  const setCounselor = useCounselorStore((state) => state.setCounselor);
 
   const router = useRouter();
 
-  const handleViewDetails = (id: number) => {
-  router.push(`/counselor-description/${id}`);
-  console.log(counselors)
-};
+  useEffect(() => {
+    if (isLoading) {
+      setShowModal(true);
+      setModalMessage("Almost ready");
+    } else if (counselors) {
+      console.log("these are counselors >>>", counselors)
+      setShowModal(false);
+      toast.success("Support is a click away");
+      // Optionally navigate to the room page or update UI
+    } else if (isError) {
+      setShowModal(false);
+      toast.error("Failed to fetch counselors");
+    }
+  }, [isLoading, counselors, isError]);
 
-   function handleBack(){
-    router.back()
+  const handleViewDetails = (counselorId: number, address: `0x${string}`,fees: bigint) => {
+    setCounselor(counselorId, address, fees);
+    router.push(`/counselor-description/${counselorId}`);
+  };
+
+  function handleBack() {
+    router.back();
   }
 
   function handleRoute() {
     router.push("/register-counselor");
   }
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setSelectedCounselor(null);
-  };
-
-  const handleBook = (name: string, fee: string) => {
-    setSelectedCounselor({ name, fee });
-    setIsModalOpen(true);
-  };
-
 
   return (
     <>
@@ -70,34 +75,26 @@ export default function FindCounselorsPage() {
         {/* Counselor List */}
         <div className="px-4 py-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {counselors.map((counselor) => (
-              <CounselorCard
-                key={counselor.id}
-                name={counselor.name}
-                rating= {4}
-                description={"counselor"}
-                fee={"4.5Eth"}
-                onBook={() => handleBook(counselor.name, "4.5")}
-                onViewDetails={() => handleViewDetails(counselor.id)}
-              />
-            ))}
+            {counselors.map((counselor) => {
+              const avatarUrl = generateAvatarFromAddress(counselor.counselorAddress);
+              return (
+                <CounselorCard
+                  key={counselor.id}
+                  name={counselor.name}
+                  rating={4}
+                  description={"counselor"}
+                  fee={"0.000001Eth"}
+                  onViewDetails={() => handleViewDetails(counselor.id, counselor.counselorAddress,parseEther("0.000001"))}
+                  avatarUrl={avatarUrl}
+                />
+              );
+            })}
           </div>
         </div>
 
         <BottomNavigation />
+        <LoadingModal show={showModal} message={modalMessage} />
       </div>
-
-      {/* Booking Modal */}
-      {selectedCounselor && (
-        <CounselorBookingModal
-          isOpen={isModalOpen}
-          counselorName={selectedCounselor.name}
-          fee={selectedCounselor.fee}
-          date="Wednesday, 25th October 2025"
-          time="3:00 PM"
-          onClose={handleCloseModal}
-        />
-      )}
     </>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Header } from "../components/header";
 import { BottomNavigation } from "../components/bottom-navigation";
 import UiButton from "../components/ui/modals/uiButton";
@@ -48,22 +48,32 @@ export default function CounselorRegistrationPage() {
     const specializationIndex = specializations.indexOf(
       formData.specialization
     );
-    toast.info("Verifying License")
-    router.push("/discover")
-    await registerCounselor(
-      formData.name,
-      specializationIndex,
-      formData.licenseNumber
-    );
-    if(isPending){
-      toast.info("Data is being processed")
+    try {
+      await registerCounselor(
+        formData.name,
+        specializationIndex,
+        formData.licenseNumber
+      );
+    } catch (err) {
+      console.error("Registration submission failed:", err);
+      toast.error("Failed to submit registration.");
     }
-    toast.info("Data submitted for verification");
-
-    console.log("Counselor registered:", formData);
-
-    router.push("/counselor-profile");
   }
+
+  // Handle transaction confirmation
+  useEffect(() => {
+    if (isConfirmed) {
+      toast.success("Counselor registered successfully!");
+      router.push("/counselor-profile");
+    }
+  }, [isConfirmed, router]);
+
+  // Handle write errors
+  useEffect(() => {
+    if (writeError) {
+      toast.error(`Transaction failed: ${writeError.message}`);
+    }
+  }, [writeError]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-50 pb-24">
@@ -175,7 +185,11 @@ export default function CounselorRegistrationPage() {
 
         {/* Submit Button */}
         <div className="flex justify-center">
-          <UiButton text="Register" type="submit" />
+          <UiButton
+            text={isConfirming ? "Confirming..." : isPending ? "Registering..." : "Register"}
+            type="submit"
+            disabled={isPending || isConfirming}
+          />
         </div>
       </form>
 

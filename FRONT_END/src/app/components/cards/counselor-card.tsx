@@ -8,10 +8,9 @@ interface CounselorCardProps {
   rating: number;
   fee: string;
   description: string;
-  imageUrl?: string;
-  onBook?: () => void;
-  buttonText?: string;
+  avatarUrl?: string;
   onViewDetails?: () => void;
+  viewDetailsText?: string;
 }
 
 export default function CounselorCard({
@@ -19,20 +18,18 @@ export default function CounselorCard({
   rating,
   fee,
   description,
-  imageUrl,
-  onBook,
-  buttonText = "Book a session",
+  avatarUrl,
   onViewDetails,
+  viewDetailsText = "View details",
 }: CounselorCardProps) {
   return (
-    <div className="bg-white r overflow-hidden" onClick={onViewDetails}>
+    <div className="bg-white r overflow-hidden">
       <div className="relative h-56 bg-[#D1D5DB]">
-        {imageUrl && (
-          <Image
-            src={imageUrl || "/placeholder.svg"}
+        {avatarUrl && (
+          <img
+            src={avatarUrl || "/placeholder.svg"}
             alt={name}
-            fill
-            className="object-cover"
+            className="object-cover w-full h-full"
           />
         )}
         <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent flex flex-col justify-between p-4">
@@ -57,10 +54,10 @@ export default function CounselorCard({
           {description}
         </p>
         <button
-          onClick={onBook}
+          onClick={onViewDetails}
           className="w-full bg-[#071133] text-white py-3 rounded-lg [font-family:'Poppins',Helvetica] font-semibold text-sm tracking-[0]"
         >
-          {buttonText}
+          {viewDetailsText}
         </button>
       </div>
     </div>

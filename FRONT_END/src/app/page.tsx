@@ -10,7 +10,7 @@ import { useEffect, useRef, useState } from "react";
 import UiButton from "./components/ui/modals/uiButton";
 import { useRouter } from "next/navigation";
 import LoadingModal from "./components/ui/modals/LoadingModal";
-import { useAccount, useConnect } from 'wagmi'
+import { useAccount, useConnect } from "wagmi";
 
 declare global {
   interface Window {
@@ -24,99 +24,107 @@ declare global {
 
 export default function Home() {
   const router = useRouter();
-   const { address, isConnected } = useAccount();
-   const { connectAsync, connectors } = useConnect();
-   const {
-     register,
-     isPending,
-     isConfirming,
-     isConfirmed,
-     error: writeError,
-   } = useRegisterUser();
- 
-   const { setUser } = useUserStore();
-   const { userData, isLoading, isRegistered } = useReadUsers();
-   const hasRegistered = useRef(false);
- 
-   const [showModal, setShowModal] = useState(false);
-   const [modalMessage, setModalMessage] = useState("");
- 
-   useEffect(() => {
- 
-   if (isConnected) initializeUser();
- 
-     if (isConnected && isLoading) {
-       setShowModal(true);
-       setModalMessage("Please wait... the sun is warming up!! 🌞");
-     } else if ((isConnected && isPending) || isConfirming) {
-       setShowModal(true);
-       setModalMessage("Please wait while we create your account...");
-     } else if ((isConnected && isConfirmed) || writeError) {
-       setShowModal(false);
-     }
-   }, [
-     isLoading,
-     isPending,
-     isConfirming,
-     isConfirmed,
-     writeError,
-     isConnected,
-   ]);
- 
+  const { address, isConnected } = useAccount();
+  const { connectAsync, connectors } = useConnect();
+  const {
+    register,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    error: writeError,
+  } = useRegisterUser();
 
-    console.log("this is address connected :",address)
- 
-   async function initializeUser() {
-     if (isLoading || hasRegistered.current) return;
- 
- 
-     if (!isConnected || !address) {
-       toast.info("Connecting wallet...");
-       try {
-         const injected = connectors.find((c) => c.id === "injected");
-         if (!injected) throw new Error("No wallet found");
-         const { accounts } = await connectAsync({ connector: injected });
-         toast.success(`Connected: ${accounts[0].slice(0, 6)}...`);
-         return;
-       } catch {
-         toast.error("Wallet connection failed");
-         return;
-       }
-     }
- 
- 
-     if (isRegistered && userData) {
-       const { name, avatar } = userData;
-       setUser(name, avatar);
-       toast.success(`Welcome back, ${name}!`);
-       setShowModal(false);
-       router.push("/discover");
-       return;
-     }
- 
- 
-     if (!isRegistered && !hasRegistered.current) {
-       hasRegistered.current = true;
-       const name = generateRandomNameFromAddress(address);
-       const avatar = generateAvatarFromAddress(address);
- 
-       setUser(name, avatar);
-       toast.info("New user detected, registering...");
-       setShowModal(true);
-       setModalMessage("Please wait while we create your account...");
- 
-       try {
-         await register(name, avatar);
-         // toast.success(`Welcome, ${name}!`);
-         router.push("/userRegistered");
-       } catch (err) {
-         toast.error("Registration failed");
-       } finally {
-         setShowModal(false);
-       }
-     }
-   }
- 
+  const { setUser } = useUserStore();
+  const { userData, isLoading, isRegistered } = useReadUsers();
+  const hasRegistered = useRef(false);
+
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
+
+  useEffect(() => {
+
+    if (isConnected && isLoading) {
+      setShowModal(true);
+      setModalMessage("Please wait... the sun is warming up!! 🌞");
+      
+    } else if ((isConnected && isPending) || isConfirming) {
+      setShowModal(true);
+      setModalMessage("Please wait while we create your account...");
+    } else if ((isConnected && isConfirmed) || writeError) {
+      setShowModal(false);
+    }
+    if (isConnected) initializeUser();
+  }, [
+    isLoading,
+    isPending,
+    isConfirming,
+    isConfirmed,
+    writeError,
+    isConnected,
+  ]);
+
+  console.log("this is address connected :", address);
+
+  async function initializeUser() {
+    if (isLoading || hasRegistered.current) return;
+
+    if (!isConnected || !address) {
+      setShowModal(true);
+      setModalMessage("Connecting wallet...");
+      try {
+        const injected = connectors.find((c) => c.id === "injected");
+        if (!injected) throw new Error("No wallet found");
+        const { accounts } = await connectAsync({ connector: injected });
+        setTimeout(() => {
+          setModalMessage(`Connected: ${accounts[0].slice(0, 6)}...`);
+        }, 3000);
+        setShowModal(false);
+        return;
+      } catch {
+        setTimeout(() => {
+          setModalMessage("Wallet connection failed");
+        }, 3000);
+
+        setShowModal(false);
+        return;
+      }
+    }
+
+    if (isRegistered && userData) {
+      const { name, avatar } = userData;
+      setUser(name, avatar);
+      setTimeout(() => {
+        setModalMessage(`Welcome back, ${name}!`);
+      }, 10000);
+      setShowModal(false);
+      router.push("/discover");
+      return;
+    }
+
+    if (!isRegistered && !hasRegistered.current) {
+      hasRegistered.current = true;
+      const name = generateRandomNameFromAddress(address);
+      const avatar = generateAvatarFromAddress(address);
+
+      setUser(name, avatar);
+      toast.info("New user detected, registering...");
+      setShowModal(true);
+      setModalMessage("Please wait while we create your account...");
+
+      try {
+        await register(name, avatar);
+        setTimeout(() => {
+          setModalMessage(`Welcome, ${name}!`);
+        }, 10000);
+        setShowModal(false);
+        router.push("/userRegistered");
+      } catch (err) {
+        toast.error("Registration failed");
+      } finally {
+        setShowModal(false);
+      }
+    }
+  }
 
   // useEffect(() => {
 
@@ -196,10 +204,6 @@ export default function Home() {
   //   //     }
   //   //   }
   // }
-
-  
-
-
 
   return (
     <main className="bg-white w-full h-screen relative flex flex-col items-center justify-center mt-6">

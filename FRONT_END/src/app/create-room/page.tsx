@@ -1,19 +1,22 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Header } from "../components/header";
 import { BottomNavigation } from "../components/bottom-navigation";
 import UiButton from "../components/ui/modals/uiButton";
 import { ArrowLeft } from "lucide-react";
 import { useAccount } from "wagmi";
-import { useCreateRoom } from "../../hooks/usePlatformHook"
+import { useCreateRoom } from "../../hooks/usePlatformHook";
 import { toast } from "react-toastify";
+import LoadingModal from "../components/ui/modals/LoadingModal";
 
 export default function CreateRoomPage() {
   const router = useRouter();
   const [roomName, setRoomName] = useState("");
   const [isPrivate, setIsPrivate] = useState(false);
+  const [showModal, setShowModal] = useState(false);
+  const [modalMessage, setModalMessage] = useState("");
 
   const { address, isConnected } = useAccount();
   const { createRoom, isPending, isConfirming, isConfirmed } = useCreateRoom();
@@ -22,9 +25,24 @@ export default function CreateRoomPage() {
     router.back();
   }
 
+  useEffect(() => {
+     if (isConfirming || isPending) {
+      setShowModal(true)
+      setModalMessage(`creating ${roomName}`);
+    } else if (isConfirmed) {
+      setShowModal(false);
+      toast.info(`rooms Created ,${roomName}`);
+      console.log("rooms :", roomName);
+    }
+  }, [
+    isConfirming,
+    isPending,
+    isConfirmed
+  ]);
+
   async function handleCreateRoom() {
-    if(!isConnected){
-      toast.error("Connect Wallet")
+    if (!isConnected) {
+      toast.error("Connect Wallet");
     }
     if (!roomName) return alert("Room name is required");
 
@@ -87,11 +105,9 @@ export default function CreateRoomPage() {
             </label>
           </div>
           <UiButton text="Create Room" onClick={handleCreateRoom} />
-          {isPending && <p>Creating room...</p>}
-          {isConfirming && <p>Waiting for confirmation...</p>}
-          {isConfirmed && <p>Room created successfully!</p>}
         </div>
       </div>
+      <LoadingModal show={showModal} message={modalMessage} />
 
       <BottomNavigation />
     </div>

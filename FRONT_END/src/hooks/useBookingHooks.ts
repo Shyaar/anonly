@@ -1,123 +1,234 @@
 import {
-  useReadContract,
-  useWriteContract,
-  useWaitForTransactionReceipt,
   useAccount,
+  useWriteContract,
+  useReadContract,
+  useWaitForTransactionReceipt,
 } from "wagmi";
+import { BaseError } from "viem";
+import { toast } from "react-toastify";
+import bookingABI from "../abi/booking.json";
 
-import bookingABI from "../abi/booking.json"; // Correct ABI import
+export type Session = {
+  id: number;
+  counselor: string;
+  user: string;
+  startTime: number;
+  duration: number;
+  fee: string;
+  status: number;
+};
 
-export function useReadBooking(bookingId?: number) {
+export type RawSession = {
+  id: string | number;
+  counselor: string;
+  user: string;
+  startTime: string | number;
+  duration: string | number;
+  fee: string | number;
+  status: string | number;
+};
+
+// ----- Read a specific session -----
+export function useReadSession(sessionId?: bigint) {
   const { address, isConnected } = useAccount();
   const contractAddress = process.env
     .NEXT_PUBLIC_BOOKING_CONTRACT_ADDRESS as `0x${string}`;
 
-  const { data: bookingDetails, isLoading: loadingBooking, refetch: refetchBooking, isError: errorBooking } = useReadContract({
+  const {
+    data: sessionData,
+    isLoading,
+    isError,
+    refetch,
+  } = useReadContract({
     address: contractAddress,
     abi: bookingABI,
-    functionName: "getBookingDetails", // Assuming a function to get booking details
-    args: bookingId !== undefined ? [bookingId] : undefined,
-    query: { enabled: !!bookingId && isConnected },
+    functionName: "getSessionDetails",
+    args: sessionId !== undefined ? [sessionId] : undefined,
+    query: { enabled: !!sessionId && isConnected },
   });
 
-  const { data: userBookings, isLoading: loadingUserBookings, refetch: refetchUserBookings, isError: errorUserBookings } = useReadContract({
-    address: contractAddress,
-    abi: bookingABI,
-    functionName: "getUserBookings", // Assuming a function to get user's bookings
-    args: address ? [address] : undefined,
-    query: { enabled: !!address && isConnected },
-  });
+  let session: Session | null = null;
 
-  return {
-    bookingDetails,
-    loadingBooking,
-    refetchBooking,
-    errorBooking,
-    userBookings,
-    loadingUserBookings,
-    refetchUserBookings,
-    errorUserBookings,
-    address,
-    isConnected,
-  };
+  if (sessionData) {
+    const s: RawSession = sessionData as RawSession;
+    session = {
+      id: Number(s.id),
+      counselor: s.counselor,
+      user: s.user,
+      startTime: Number(s.startTime),
+      duration: Number(s.duration),
+      fee: s.fee.toString(),
+      status: Number(s.status),
+    };
+  }
+
+  return { session, isLoading, isError, refetch };
 }
 
-export function useBookingActions(contractAddress?: `0x${string}`) {
-  const { writeContract, data: txHash, isPending, error } = useWriteContract();
+// ----- Read my booked sessions -----
+export function useReadMyBookedSessions() {
+  const { address, isConnected } = useAccount();
+  const contractAddress = process.env
+    .NEXT_PUBLIC_BOOKING_CONTRACT_ADDRESS as `0x${string}`;
 
-  const { isLoading: isConfirming, isSuccess: isConfirmed } = useWaitForTransactionReceipt({
-    hash: txHash,
+  const {
+    data: sessionsData,
+    isLoading,
+    isError,
+    refetch,
+  } = useReadContract({
+    address: contractAddress,
+    abi: bookingABI,
+    functionName: "getMyBookedSessions",
+    query: { enabled: isConnected },
   });
 
-  const createBooking = (counselorAddress: `0x${string}`, startTime: bigint, endTime: bigint, price: bigint) => {
-    if (!counselorAddress || !startTime || !endTime || !price) {
-      console.error("Missing arguments for booking creation");
-      return;
+  const sessionsArray: RawSession[] = Array.isArray(sessionsData)
+    ? sessionsData
+    : sessionsData
+    ? Object.values(sessionsData)
+    : [];
+
+  const sessions: Session[] = sessionsArray.map((s: RawSession) => ({
+    id: Number(s.id),
+    counselor: s.counselor,
+    user: s.user,
+    startTime: Number(s.startTime),
+    duration: Number(s.duration),
+    fee: s.fee.toString(),
+    status: Number(s.status),
+  }));
+
+  return { sessions, isLoading, isError, refetch };
+}
+
+// ----- Booking Actions -----
+export function useBookingActions() {
+  const { address, isConnected } = useAccount();
+  const contractAddress = process.env
+    .NEXT_PUBLIC_BOOKING_CONTRACT_ADDRESS as `0x${string}`;
+
+  const { data: hash, writeContractAsync, isPending, error: writeError } =
+    useWriteContract();
+
+  const { isLoading: isConfirming, isSuccess: isConfirmed } =
+    useWaitForTransactionReceipt({ hash });
+
+  // ----- Book Session -----
+  const bookSession = async (
+    counselor: `0x${string}`,
+    startTime: bigint,
+    duration: bigint,
+    fee: bigint
+  ) => {
+    if (!isConnected) {
+      toast.error("Please connect your wallet first!");
+      throw new Error("Wallet not connected");
     }
 
     try {
-      writeContract({
-        address:
-          contractAddress ??
-          (process.env.NEXT_PUBLIC_BOOKING_CONTRACT_ADDRESS as `0x${string}`),
+      const tx = await writeContractAsync({
+        address: contractAddress,
         abi: bookingABI,
-        functionName: "createBooking",
-        args: [counselorAddress, startTime, endTime, price],
-        value: price, // Assuming price is sent as value
+        functionName: "bookSession",
+        args: [counselor, startTime, duration, fee],
+        value: fee, // payable value
       });
+      console.log(address)
+      console.log("tx}}}}}}}}}}}}}}}}}}}}",tx);
+      toast.info("⏳ Transaction sent... waiting for confirmation");
+      const txhash = await hash
+      console.log("TxHash_)_+++++++++:::", txhash)
+      return tx;
     } catch (err) {
-      console.error("Error calling createBooking:", err);
+      console.error("🔴 [BookSession] Failed:", err);
+      toast.error("Booking failed. See console for details.");
+      throw err;
     }
   };
 
-  const cancelBooking = (bookingId: number) => {
-    if (!bookingId) {
-      console.error("Missing bookingId for cancellation");
-      return;
-    }
-
+  // ----- Cancel Session by User -----
+  const cancelSessionByUser = async (sessionId: bigint) => {
     try {
-      writeContract({
-        address:
-          contractAddress ??
-          (process.env.NEXT_PUBLIC_BOOKING_CONTRACT_ADDRESS as `0x${string}`),
+      const tx = await writeContractAsync({
+        address: contractAddress,
         abi: bookingABI,
-        functionName: "cancelBooking",
-        args: [bookingId],
+        functionName: "cancelSessionByUser",
+        args: [sessionId],
       });
+      toast.info("⏳ Cancel transaction sent...");
+      return tx;
     } catch (err) {
-      console.error("Error calling cancelBooking:", err);
+      console.error("🔴 [CancelSessionByUser] Failed:", err);
+      toast.error("Cancel failed.");
+      throw err;
     }
   };
 
-  const confirmBooking = (bookingId: number) => {
-    if (!bookingId) {
-      console.error("Missing bookingId for confirmation");
-      return;
-    }
-
+  // ----- Cancel Session by Counselor -----
+  const cancelSessionByCounselor = async (sessionId: bigint) => {
     try {
-      writeContract({
-        address:
-          contractAddress ??
-          (process.env.NEXT_PUBLIC_BOOKING_CONTRACT_ADDRESS as `0x${string}`),
+      const tx = await writeContractAsync({
+        address: contractAddress,
         abi: bookingABI,
-        functionName: "confirmBooking",
-        args: [bookingId],
+        functionName: "cancelSessionByCounselor",
+        args: [sessionId],
       });
+      toast.info("⏳ Cancel transaction sent...");
+      return tx;
     } catch (err) {
-      console.error("Error calling confirmBooking:", err);
+      console.error("🔴 [CancelSessionByCounselor] Failed:", err);
+      toast.error("Cancel failed.");
+      throw err;
+    }
+  };
+
+  // ----- Complete Session -----
+  const completeSession = async (sessionId: bigint) => {
+    try {
+      const tx = await writeContractAsync({
+        address: contractAddress,
+        abi: bookingABI,
+        functionName: "completeSession",
+        args: [sessionId],
+      });
+      toast.info("⏳ Complete transaction sent...");
+      return tx;
+    } catch (err) {
+      console.error("🔴 [CompleteSession] Failed:", err);
+      toast.error("Complete session failed.");
+      throw err;
+    }
+  };
+
+  // ----- Mark No Show and Refund -----
+  const markNoShowAndRefund = async (sessionId: bigint, userNoShow: boolean) => {
+    try {
+      const tx = await writeContractAsync({
+        address: contractAddress,
+        abi: bookingABI,
+        functionName: "markNoShowAndRefund",
+        args: [sessionId, userNoShow],
+      });
+      toast.info("⏳ No-show transaction sent...");
+      return tx;
+    } catch (err) {
+      console.error("🔴 [MarkNoShowAndRefund] Failed:", err);
+      toast.error("Mark no-show failed.");
+      throw err;
     }
   };
 
   return {
-    createBooking,
-    cancelBooking,
-    confirmBooking,
-    txHash,
+    bookSession,
+    cancelSessionByUser,
+    cancelSessionByCounselor,
+    completeSession,
+    markNoShowAndRefund,
+    hash,
     isPending,
     isConfirming,
     isConfirmed,
-    error,
+    error: writeError,
   };
 }

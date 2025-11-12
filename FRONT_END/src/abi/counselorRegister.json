@@ -38,6 +38,11 @@
         "internalType": "struct CounselorRegistry.Counselor[]",
         "components": [
           {
+            "name": "counselorAddress",
+            "type": "address",
+            "internalType": "address"
+          },
+          {
             "name": "id",
             "type": "uint256",
             "internalType": "uint256"
@@ -83,6 +88,11 @@
         "type": "tuple",
         "internalType": "struct CounselorRegistry.Counselor",
         "components": [
+          {
+            "name": "counselorAddress",
+            "type": "address",
+            "internalType": "address"
+          },
           {
             "name": "id",
             "type": "uint256",

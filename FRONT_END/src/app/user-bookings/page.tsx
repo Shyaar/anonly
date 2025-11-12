@@ -11,13 +11,11 @@ type TabType = "active" | "completed" | "cancelled"
 export default function UserBookingsPage() {
   const [activeTab, setActiveTab] = useState<TabType>("active")
 
-  const bookings = [
-    { id: 1, name: "Twelve", date: "Waiting for confirmation", days: ")" },
-    // { id: 2, name: "calm onion", date: "28-11-2025", days: "2:23" },
-    // { id: 3, name: "calm onion", date: "28-11-2025", days: "2:23" },
-    // { id: 4, name: "calm onion", date: "28-11-2025", days: "2:23" },
-    // { id: 5, name: "calm onion", date: "28-11-2025", days: "2:23" },
-  ]
+ const bookings = [
+  { id: 1, name: "Twelve", date: "Waiting for confirmation", days: "—", status: 0 },
+  // { id: 2, name: "Calm Onion", date: "28-11-2025", days: "2:23", status: 1 },
+  // { id: 3, name: "Another Booking", date: "01-12-2025", days: "1:15", status: 2 },
+]
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-50 pb-24">

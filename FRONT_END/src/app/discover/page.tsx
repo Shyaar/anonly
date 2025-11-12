@@ -36,6 +36,7 @@ export default function DiscoverPage() {
   }
 
   useEffect(() => {
+    refetch()
     if (isPending) {
       setShowModal(true);
       setModalMessage("Almost ready");

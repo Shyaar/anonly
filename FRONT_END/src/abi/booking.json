@@ -30,7 +30,22 @@
         "name": "bookSession",
         "inputs": [
             {
-                "name": "_sessionId",
+                "name": "_counselor",
+                "type": "address",
+                "internalType": "address"
+            },
+            {
+                "name": "_startTime",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "_duration",
+                "type": "uint256",
+                "internalType": "uint256"
+            },
+            {
+                "name": "_fee",
                 "type": "uint256",
                 "internalType": "uint256"
             }
@@ -265,35 +280,6 @@
     },
     {
         "type": "function",
-        "name": "offerSession",
-        "inputs": [
-            {
-                "name": "_startTime",
-                "type": "uint256",
-                "internalType": "uint256"
-            },
-            {
-                "name": "_duration",
-                "type": "uint256",
-                "internalType": "uint256"
-            },
-            {
-                "name": "_fee",
-                "type": "uint256",
-                "internalType": "uint256"
-            }
-        ],
-        "outputs": [
-            {
-                "name": "",
-                "type": "uint256",
-                "internalType": "uint256"
-            }
-        ],
-        "stateMutability": "nonpayable"
-    },
-    {
-        "type": "function",
         "name": "s_counselorBookedSessions",
         "inputs": [
             {
@@ -496,43 +482,6 @@
         "anonymous": false
     },
     {
-        "type": "event",
-        "name": "SessionOffered",
-        "inputs": [
-            {
-                "name": "sessionId",
-                "type": "uint256",
-                "indexed": true,
-                "internalType": "uint256"
-            },
-            {
-                "name": "counselor",
-                "type": "address",
-                "indexed": true,
-                "internalType": "address"
-            },
-            {
-                "name": "startTime",
-                "type": "uint256",
-                "indexed": false,
-                "internalType": "uint256"
-            },
-            {
-                "name": "duration",
-                "type": "uint256",
-                "indexed": false,
-                "internalType": "uint256"
-            },
-            {
-                "name": "fee",
-                "type": "uint256",
-                "indexed": false,
-                "internalType": "uint256"
-            }
-        ],
-        "anonymous": false
-    },
-    {
         "type": "error",
         "name": "CannotCancelSession",
         "inputs": []
@@ -565,16 +514,6 @@
     {
         "type": "error",
         "name": "NotCounselor",
-        "inputs": []
-    },
-    {
-        "type": "error",
-        "name": "SessionAlreadyStarted",
-        "inputs": []
-    },
-    {
-        "type": "error",
-        "name": "SessionNotAvailable",
         "inputs": []
     },
     {
